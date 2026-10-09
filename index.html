@@ -1669,6 +1669,7 @@ tbody tr:last-child td{border-bottom:0}
     </div>
     <div class="grid g3 panel" style="margin-top:32px">
       <a class="linkcard" href="/denver-itinerary/"><b>Denver Itinerary Planner</b><span>One, two and three-day plans plus free, family, rainy-day and seasonal routes.</span></a>
+      <a class="linkcard" href="/denver-airport-to-downtown/"><b>Denver Airport to Downtown</b><span>The A Line train, driving and rideshare from DEN compared.</span></a>
       <a class="linkcard" href="https://coloradowhattodo.com" target="_blank" rel="noopener"><b>Colorado What To Do</b><span>Activities and attractions across the whole state, not just the Front Range.</span></a>
       <a class="linkcard" href="https://coloradowhatsup.com" target="_blank" rel="noopener"><b>Colorado What's Up</b><span>What is happening in Colorado this week &mdash; events, festivals and openings.</span></a>
       <a class="linkcard" href="https://bestrestaurantdenver.com" target="_blank" rel="noopener"><b>Best Restaurant Denver</b><span>Where to eat in Denver, by neighborhood and by occasion.</span></a>
@@ -1704,9 +1705,9 @@ tbody tr:last-child td{border-bottom:0}
 
       <div class="formcard">
         <h3 style="margin-top:0">Request rates and availability</h3>
-        <form id="adForm" method="POST" novalidate>
+        <form id="adForm" method="POST" data-a="aW5mbw==" data-b="ZXlldG9hZC5jb20=" novalidate>
           <!-- FormSubmit control fields -->
-          <input type="hidden" name="_subject" value="Ad inquiry - denvercoloradothingstodo.com">
+          <input type="hidden" name="_subject" value="New lead — denvercoloradothingstodo.com">
           <input type="hidden" name="_template" value="table">
           <input type="hidden" name="_captcha" value="false">
           <input type="hidden" name="_source" id="_source" value="denvercoloradothingstodo.com">
@@ -1872,153 +1873,59 @@ tbody tr:last-child td{border-bottom:0}
     }, 4000);
   }
 
-  /* ---------- ad inquiry form ---------- */
+})();
+</script>
+<script>
+/* Lead form: FormSubmit AJAX, address assembled at runtime */
+(function(){
+  document.querySelectorAll('a.eml[data-a]').forEach(function(a){
+    var e = atob(a.getAttribute('data-a')) + String.fromCharCode(64) + atob(a.getAttribute('data-b'));
+    a.href = 'mailto:' + e; a.textContent = e;
+  });
   var form = document.getElementById('adForm');
-  if (!form) return;
-
-  var msg = document.getElementById('adMsg');
-  var btn = document.getElementById('adSubmit');
-  var tsField = document.getElementById('form_render_ts');
-  var renderedAt = Date.now();
-  if (tsField) tsField.value = String(renderedAt);
-
-  /* randomised spam-check sum */
-  var a = 2 + Math.floor(Math.random() * 7);
-  var b = 2 + Math.floor(Math.random() * 7);
-  var sumA = document.getElementById('sumA');
-  var sumB = document.getElementById('sumB');
-  if (sumA) sumA.textContent = a;
-  if (sumB) sumB.textContent = b;
-  var expected = a + b;
-
-  /* endpoint assembled at submit time, never present in the HTML */
-  function buildAction(){
-    var user = ['s','a','l','e','s'].join('');
-    var host = ['e','y','e','t','o','a','d'].join('');
-    return 'https://formsubmit.co/ajax/' + user + '@' + host + '.com';
+  if(!form) return;
+  var loadedAt = Date.now();
+  var btn = form.querySelector('[type="submit"]');
+  var label = btn ? btn.textContent : '';
+  function show(ok, text){
+    var m = document.getElementById('adMsg'); if(!m) return;
+    m.className = 'formmsg show ' + (ok ? 'ok' : 'bad'); m.textContent = text;
   }
-  function buildFallbackAction(){
-    var user = ['s','a','l','e','s'].join('');
-    var host = ['e','y','e','t','o','a','d'].join('');
-    return 'https://formsubmit.co/' + user + '@' + host + '.com';
-  }
-
-  function show(state, text){
-    msg.className = 'formmsg show ' + state;
-    msg.textContent = text;
-  }
-
+  function addr(){ return atob(form.getAttribute('data-a')) + String.fromCharCode(64) + atob(form.getAttribute('data-b')); }
+  var sa = 2 + Math.floor(Math.random() * 7), sb = 2 + Math.floor(Math.random() * 7);
+  var eA = document.getElementById('sumA'), eB = document.getElementById('sumB');
+  if(eA) eA.textContent = sa; if(eB) eB.textContent = sb;
+  var tsF = document.getElementById('form_render_ts'); if(tsF) tsF.value = String(loadedAt);
   form.addEventListener('submit', function(e){
     e.preventDefault();
-    msg.className = 'formmsg';
-
-    /* honeypots */
-    var honey = form.querySelector('input[name="_honey"]');
+    var hp = form.querySelectorAll('input[name="_honey"]');
+    for(var i = 0; i < hp.length; i++){ if(hp[i].value.trim() !== '') return; }
+    if(Date.now() - loadedAt < 3500){ show(false, 'Give the form a moment, then send again.'); return; }
+    var req = form.querySelectorAll('[required]');
+    for(var j = 0; j < req.length; j++){
+      var el = req[j], v = (el.value || '').trim();
+      if(!v || (el.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))){
+        show(false, 'Please fill in every required field.'); el.focus(); return;
+      }
+    }
     var decoy = form.querySelector('input[name="company_url_confirm"]');
-    if ((honey && honey.value !== '') || (decoy && decoy.value !== '')) {
-      show('ok', 'Thanks — your inquiry has been received.');
-      return; /* silently discard */
-    }
-
-    /* time trap: real people take longer than 3 seconds */
-    if (Date.now() - renderedAt < 3000) {
-      show('warn', 'That was quick. Take a moment to review your details, then send again.');
-      return;
-    }
-
-    /* spam-check sum */
+    if(decoy && decoy.value !== '') return;
     var human = document.getElementById('ad_human');
-    if (!human || parseInt(human.value, 10) !== expected) {
-      show('bad', 'The spam check answer is not right. Please try again.');
-      human && human.focus();
-      return;
-    }
-
-    /* required fields */
-    var required = ['ad_name','ad_business','ad_email','ad_message'];
-    for (var i = 0; i < required.length; i++) {
-      var el = document.getElementById(required[i]);
-      if (!el || !el.value.trim()) {
-        show('bad', 'Please fill in every field marked with an asterisk.');
-        el && el.focus();
-        return;
-      }
-    }
-    var email = document.getElementById('ad_email').value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
-      show('bad', 'That email address does not look right. Please check it.');
-      document.getElementById('ad_email').focus();
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = 'Sending…';
-
+    if(human && parseInt(human.value, 10) !== sa + sb){ show(false, 'The spam check answer is not right. Please try again.'); human.focus(); return; }
+    if(btn){ btn.disabled = true; btn.textContent = 'Sending\u2026'; }
     var data = new FormData(form);
-    data.delete('human_check');
-    data.delete('company_url_confirm');
-    data.delete('form_render_ts');
+    data.delete('human_check'); data.delete('company_url_confirm'); data.delete('form_render_ts');
     data.append('page', window.location.href);
-
-    /* Stage 1: AJAX */
-    fetch(buildAction(), {
-      method: 'POST',
-      body: data,
-      headers: { 'Accept': 'application/json' }
-    })
-    .then(function(res){ return res.json().catch(function(){ return {}; }); })
-    .then(function(json){
-      if (json && (json.success === 'true' || json.success === true)) {
-        show('ok', 'Sent. Thanks — we will reply within one business day with availability and rates.');
+    fetch('https://formsubmit.co/ajax/' + addr(), {method:'POST', headers:{Accept:'application/json'}, body:data})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(j){
+        if(j && (j.success === false || j.success === 'false')) throw 0;
+        show(true, "Sent. We'll get back to you shortly.");
         form.reset();
-      } else {
-        stageTwo(data);
-      }
-    })
-    .catch(function(){ stageTwo(data); })
-    .finally(function(){
-      btn.disabled = false;
-      btn.textContent = 'Send inquiry';
-    });
+      })
+      .catch(function(){ show(false, 'That did not go through. Please call 1-800-481-8638.'); })
+      .then(function(){ if(btn){ btn.disabled = false; btn.textContent = label; } });
   });
-
-  /* Stage 2: hidden iframe fallback for blocked fetch / CORS failures */
-  function stageTwo(data){
-    try {
-      var frameName = 'fsFrame_' + Date.now();
-      var frame = document.createElement('iframe');
-      frame.name = frameName;
-      frame.style.display = 'none';
-      document.body.appendChild(frame);
-
-      var f = document.createElement('form');
-      f.method = 'POST';
-      f.action = buildFallbackAction();
-      f.target = frameName;
-      f.style.display = 'none';
-
-      data.forEach(function(value, key){
-        var input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value;
-        f.appendChild(input);
-      });
-      var next = document.createElement('input');
-      next.type = 'hidden';
-      next.name = '_next';
-      next.value = 'https://denvercoloradothingstodo.com/?sent=1';
-      f.appendChild(next);
-
-      document.body.appendChild(f);
-      f.submit();
-
-      show('warn', 'Your inquiry was submitted through our backup route. If you do not hear back within one business day, email sales@eyetoad.com or call (720) 249-6588.');
-      form.reset();
-    } catch (err) {
-      show('bad', 'We could not send that from your browser. Please email sales@eyetoad.com or call (720) 249-6588 and we will pick it up from there.');
-    }
-  }
 })();
 </script>
 </body>
